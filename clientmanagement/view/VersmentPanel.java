@@ -51,7 +51,7 @@ public class VersmentPanel extends JPanel {
         // Table columns
         String[] columnNames = {
                 "ID", "Client ID", "Nom Client", "Montant", "Type",
-                "Date Paiement", "Année Concernée", "Date Création"
+                "Date Paiement", "Année Concernée", "Montant Restant", "Date Création"
         };
 
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -100,7 +100,8 @@ public class VersmentPanel extends JPanel {
         columnModel.getColumn(2).setPreferredWidth(120); // Type (now index 2)
         columnModel.getColumn(3).setPreferredWidth(120); // Date Paiement (now index 3)
         columnModel.getColumn(4).setPreferredWidth(120); // Année Concernée (now index 4)
-        columnModel.getColumn(5).setPreferredWidth(150); // Date Création (now index 5)
+        columnModel.getColumn(5).setPreferredWidth(120); // Montant Restant (now index 5)
+        columnModel.getColumn(6).setPreferredWidth(150); // Date Création (now index 6)
     }
 
     private void setupFilters() {
@@ -532,6 +533,12 @@ public class VersmentPanel extends JPanel {
                 ? client.getNom() + " " + (client.getPrenom() != null ? client.getPrenom() : "")
                 : "Client inconnu";
 
+        // Get remaining balance for the client
+        String remainingBalance = "0.00 DA";
+        if (client != null) {
+            BigDecimal remaining = versmentController.getRemainingAmountForClient(v.getClientId());
+            remainingBalance = remaining.toString() + " DA";
+        }
         return new Object[] {
                 v.getId(),
                 v.getClientId(),
@@ -541,6 +548,7 @@ public class VersmentPanel extends JPanel {
                 v.getDatePaiement() != null ? v.getDatePaiement().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
                         : "",
                 v.getAnneeConcernee(),
+                remainingBalance,
                 v.getCreatedAt() != null ? v.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : ""
         };
     }
@@ -646,6 +654,9 @@ public class VersmentPanel extends JPanel {
                 (client.getNom() + (client.getPrenom() != null ? " " + client.getPrenom() : "")) : 
                 "Client inconnu";
             
+            // Get remaining balance
+            BigDecimal remainingBalance = versmentController.getRemainingAmountForClient(versment.getClientId());
+            
             String details = "📋 DÉTAILS DU VERSEMENT\n\n" +
                     "🆔 ID: " + versment.getId() + "\n" +
                     "👤 Client: " + clientName + "\n" +
@@ -653,6 +664,7 @@ public class VersmentPanel extends JPanel {
                     "📝 Type: " + versment.getType() + "\n" +
                     "📅 Date de paiement: " + versment.getDatePaiement().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\n" +
                     "📆 Année concernée: " + versment.getAnneeConcernee() + "\n" +
+                    "💳 Montant restant: " + remainingBalance + " DA\n" +
                     "🕒 Créé le: " + (versment.getCreatedAt() != null ? 
                         versment.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")) : "N/A");
             
