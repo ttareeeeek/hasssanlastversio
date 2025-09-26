@@ -160,12 +160,14 @@ public class VersmentController {
     public void initializeRemainingBalanceForClient(int clientId) {
         try {
             Client client = clientDAO.getClientById(clientId);
-            if (client != null && client.getRemainingBalance() == null) {
-                // Initialize remaining balance = annual montant - total versments
+            if (client != null && (client.getRemainingBalance() == null || client.getRemainingBalance() == 0.0)) {
+                // Initialize remaining balance with annual montant first
                 BigDecimal annualMontant = client.getMontant() != null ? 
                     BigDecimal.valueOf(client.getMontant()) : BigDecimal.ZERO;
-                BigDecimal totalVersments = getTotalVersmentsByClientId(clientId);
-                BigDecimal remainingBalance = annualMontant.subtract(totalVersments);
+                
+                // For initialization, set remaining balance to annual amount
+                // The versments will be subtracted when they are processed
+                BigDecimal remainingBalance = annualMontant;
                 
                 // Update the remaining balance
                 boolean success = clientDAO.updateRemainingBalance(clientId, remainingBalance.doubleValue());
@@ -191,7 +193,7 @@ public class VersmentController {
             List<com.yourcompany.clientmanagement.model.Client> clients = clientController.fetchAllClients();
             
             for (com.yourcompany.clientmanagement.model.Client client : clients) {
-                if (client.getRemainingBalance() == null) {
+                if (client.getRemainingBalance() == null || client.getRemainingBalance() == 0.0) {
                     initializeRemainingBalanceForClient(client.getId());
                 }
             }

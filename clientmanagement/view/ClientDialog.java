@@ -182,32 +182,17 @@ public class ClientDialog extends JDialog {
         setFieldText(honorairesMoisField, client.getHonorairesMois());
         setFieldText(montantAnnualField, client.getMontant() != null ? String.valueOf(client.getMontant()) : "");
         
-        // Set remaining balance from client object
-        if (client.getRemainingBalance() != null) {
+        // Set remaining balance - prioritize annual amount for new clients or when remaining balance is not set
+        if (client.getRemainingBalance() != null && client.getRemainingBalance() != 0.0) {
             setFieldText(montantRestantField, String.valueOf(client.getRemainingBalance()));
         } else {
-            // For existing clients, calculate remaining amount if not set
-            if (client.getId() > 0) {
-                try {
-                    com.yourcompany.clientmanagement.controller.VersmentController versmentController = 
-                        new com.yourcompany.clientmanagement.controller.VersmentController();
-                    java.math.BigDecimal remaining = versmentController.getRemainingAmountForClient(client.getId());
-                    setFieldText(montantRestantField, remaining.toString());
-                    // Also update the client object
-                    client.setRemainingBalance(remaining.doubleValue());
-                } catch (Exception e) {
-                    setFieldText(montantRestantField, "0");
-                    client.setRemainingBalance(0.0);
-                }
+            // Initialize remaining balance with annual amount
+            if (client.getMontant() != null) {
+                setFieldText(montantRestantField, String.valueOf(client.getMontant()));
+                client.setRemainingBalance(client.getMontant());
             } else {
-                // For new clients, set remaining balance equal to annual amount
-                if (client.getMontant() != null) {
-                    setFieldText(montantRestantField, String.valueOf(client.getMontant()));
-                    client.setRemainingBalance(client.getMontant());
-                } else {
-                    setFieldText(montantRestantField, "0");
-                    client.setRemainingBalance(0.0);
-                }
+                setFieldText(montantRestantField, "0");
+                client.setRemainingBalance(0.0);
             }
         }
         
@@ -245,8 +230,11 @@ public class ClientDialog extends JDialog {
         if (!montantText.isEmpty()) {
             try {
                 Double annualAmount = Double.parseDouble(montantText);
-                // Only update remaining balance if it's empty or for new clients
-                if (montantRestantField.getText().trim().isEmpty() || client == null) {
+                // Always update remaining balance when annual amount changes (for new clients or when remaining balance equals the previous annual amount)
+                String currentRemainingText = montantRestantField.getText().trim();
+                if (currentRemainingText.isEmpty() || client == null || 
+                    (client != null && client.getMontant() != null && 
+                     currentRemainingText.equals(String.valueOf(client.getMontant())))) {
                     montantRestantField.setText(String.valueOf(annualAmount));
                 }
             } catch (NumberFormatException e) {
